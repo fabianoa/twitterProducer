@@ -36,10 +36,10 @@ public class TwitterKaftaProducer {
         endpoint.trackTerms(Lists.newArrayList("twitterapi",
                 "#AAPSweep"));
         
-        String consumerKey=    TwitterSourceConstant.CONSUMER_KEY_KEY;
-        String consumerSecret=TwitterSourceConstant.CONSUMER_SECRET_KEY;
-        String accessToken=TwitterSourceConstant.ACCESS_TOKEN_KEY;
-        String accessTokenSecret=TwitterSourceConstant.ACCESS_TOKEN_SECRET_KEY;
+        String consumerKey=    TwitterSourceConstant.CONSUMER_KEY;
+        String consumerSecret=TwitterSourceConstant.CONSUMER_SECRET;
+        String accessToken=TwitterSourceConstant.ACCESS_TOKEN;
+        String accessTokenSecret=TwitterSourceConstant.ACCESS_TOKEN_SECRET;
  
         Authentication auth = new OAuth1(consumerKey, consumerSecret, accessToken,
                 accessTokenSecret);

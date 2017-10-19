@@ -1,6 +1,7 @@
 package br.gov.dataprev.twitter.kafta;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -60,11 +61,11 @@ public class TwitterProducer {
 
     // Note that for a Production Deployment, do not hard-code your Twitter Application Authentication Keys
     // Instead, derive from a Configuration File or Context
-    private static final String CONSUMER_KEY = "H8uzrzZGI8lzl9qZp4nl8791v";
-    private static final String CONSUMER_SECRET = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
-    private static final String ACCESS_TOKEN = "412468360-dyLD4IE5zDKkynOA8gSaHDhC6PkpCp9TbAIq8gZD";
-    private static final String ACCESS_TOKEN_SECRET = "wdLst7o4eqGsukqOjyxcQcyIjRZEqc02P0TlcAODPr01j";
-    private static final String KAFKA_TOPIC = "twitter";
+//    private static final String CONSUMER_KEY = "H8uzrzZGI8lzl9qZp4nl8791v";
+//    private static final String CONSUMER_SECRET = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
+//    private static final String ACCESS_TOKEN = "412468360-dyLD4IE5zDKkynOA8gSaHDhC6PkpCp9TbAIq8gZD";
+//    private static final String ACCESS_TOKEN_SECRET = "wdLst7o4eqGsukqOjyxcQcyIjRZEqc02P0TlcAODPr01j";
+      private  static final String KAFKA_TOPIC = "twitter";
     
     
     
@@ -117,8 +118,10 @@ public class TwitterProducer {
      * @throws InterruptedException
      */
 
-    public static void run(String kafkaBroker) throws InterruptedException {
+    public static void run(String kafkaBroker,String kafkaTopic,String consumerKey, String consumerSecret,String accessToken, String accessTokenSecret, String proxyHost, Integer proxyPort, String[] keyWords ) throws InterruptedException {
 
+   	
+    	    	
         // Kafka Producer Properties
         Properties producerProperties = new Properties();
 
@@ -142,9 +145,9 @@ public class TwitterProducer {
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
         //endpoint.languages(Lists.newArrayList("pt"));
         endpoint.stallWarnings(false);
-        //endpoint.followings(Lists.newArrayList(new Long(412468360)));
-        endpoint.trackTerms(Lists.newArrayList("brasil"));
-        Authentication authentication = new OAuth1(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET);
+        endpoint.followings(Lists.newArrayList(new Long(412468360)));
+        //endpoint.trackTerms(Lists.newArrayList(keyWords));
+        Authentication authentication = new OAuth1(consumerKey, consumerSecret, accessToken, accessTokenSecret);
 
         // Build a Twitter Hosebird Client
         ClientBuilder hosebirdClientBuilder = new ClientBuilder()
@@ -152,8 +155,11 @@ public class TwitterProducer {
                 .hosts(Constants.STREAM_HOST)
                 .authentication(authentication)
                 .endpoint(endpoint) 
-                .proxy("10.70.180.23", 80)       
                 .processor(new StringDelimitedProcessor(messageQueue));
+        
+        if(!proxyHost.isEmpty())
+        	hosebirdClientBuilder.proxy(proxyHost, proxyPort);
+        
         
         BasicClient hosebirdClient = hosebirdClientBuilder.build();
 
@@ -271,22 +277,44 @@ public class TwitterProducer {
 
     public static void main(String[] args) {
 
-//        if ( args.length != 1 ) {
-//            System.err.println("Usage: TwitterProducer <broker>");
-//            System.exit(1);
-//        }
-
+    	
+//    	if (args.length < 9) {
+//			System.out.println(
+//					"Usage: TwitterProducer <brokerURL> <topicName> <twitter-consumer-key> <twitter-consumer-secret> <twitter-access-token> <twitter-access-token-secret> <proxy-host> <proxy-port> <twitter-search-keywords>");
+//			System.exit(1);
+//		}
+    	
+//    	String brokerURL = args[0].toString();
+//    	String topicName = args[1].toString();
+//		String consumerKey = args[2].toString();
+//		String consumerSecret = args[3].toString();
+//		String accessToken = args[4].toString();
+//		String accessTokenSecret = args[5].toString();
+//		String proxyHost = args[6].toString();
+//		Integer proxyPort = Integer.valueOf(args[7].toString());
+//		String[] arguments = args.clone();
+//		String[] keyWords = Arrays.copyOfRange(arguments, 8, arguments.length);
+		
+		
+		String brokerURL = "f321t018.prevnet:6667";
+    	String topicName = "twitter";
+		String consumerKey = "H8uzrzZGI8lzl9qZp4nl8791v";
+		String consumerSecret = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
+		String accessToken = "412468360-dyLD4IE5zDKkynOA8gSaHDhC6PkpCp9TbAIq8gZD";
+		String accessTokenSecret = "wdLst7o4eqGsukqOjyxcQcyIjRZEqc02P0TlcAODPr01j";
+		String proxyHost = "10.70.180.23";
+		Integer proxyPort = 80;
+		String[] keyWords = {"brasil","dataprev"};
+		
+		
         try {
 
-           Schema.Parser parser = new Schema.Parser();
-            
-            // schema = parser.parse(new File("tweetsummary.avsc"));
+            Schema.Parser parser = new Schema.Parser();
             schema = parser.parse(TWEET_SCHEMA);
-            
             recordInjection = GenericAvroCodecs.toBinary(schema);
 
             // Connect to the Twitter Streaming API and start the Producer
-            TwitterProducer.run("f321t018:6667");
+            TwitterProducer.run(brokerURL,topicName,consumerKey,consumerSecret,accessToken,accessTokenSecret,proxyHost,proxyPort,keyWords);
 
         } catch (Exception e) {
 
