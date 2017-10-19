@@ -125,6 +125,7 @@ public class TwitterProducer {
 
         // Bootstrapping
         producerProperties.put("bootstrap.servers", kafkaBroker);
+        producerProperties.put("metadata.broker.list", kafkaBroker);
 
         // Serializer Class for Keys
         producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -134,6 +135,11 @@ public class TwitterProducer {
 
         // When a Produce Request is considered completed
         producerProperties.put("request.required.acks", "1");
+        
+        
+        producerProperties.put("security.protocol", "PLAINTEXTSASL");
+        
+      
 
         // Create the Kafka Producer
         producer = new KafkaProducer(producerProperties);
