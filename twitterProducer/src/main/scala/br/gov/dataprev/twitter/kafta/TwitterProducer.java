@@ -63,7 +63,7 @@ public class TwitterProducer {
 //    private static final String CONSUMER_SECRET = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
 //    private static final String ACCESS_TOKEN = "412468360-dyLD4IE5zDKkynOA8gSaHDhC6PkpCp9TbAIq8gZD";
 //    private static final String ACCESS_TOKEN_SECRET = "wdLst7o4eqGsukqOjyxcQcyIjRZEqc02P0TlcAODPr01j";
-      private  static final String KAFKA_TOPIC = "twitter";
+      private  static final String KAFKA_TOPIC = "twitter-firehose2";
     
     
     
@@ -85,10 +85,9 @@ public class TwitterProducer {
             + "  { \"name\":\"text\", \"type\":\"string\" },"
             + "  { \"name\":\"user_id\", \"type\":\"long\" },"
             + "  { \"name\":\"user_name\", \"type\":\"string\" },"
-            + "  { \"name\":\"user_location\", \"type\":\"string\" },"
-            + "  { \"name\":\"user_url\", \"type\":\"string\" },"
+            + "  { \"name\":\"user_location\", \"type\": [\"string\", \"null\"] },"
+            + "  { \"name\":\"user_url\", \"type\":[\"string\", \"null\"] },"
             + "  { \"name\":\"user_description\", \"type\":\"string\" },"
-            + "  { \"name\":\"user_verified\", \"type\":\"string\" },"
             + "  { \"name\":\"user_followers_count\", \"type\":\"int\" },"
             + "  { \"name\":\"user_friends_count\", \"type\":\"int\" },"
             + "  { \"name\":\"user_listed_count\", \"type\":\"int\" },"
@@ -97,7 +96,6 @@ public class TwitterProducer {
             + "  { \"name\":\"user_created_at\", \"type\":\"string\" },"
             + "  { \"name\":\"user_utc_offset\", \"type\":\"int\" },"
             + "  { \"name\":\"user_time_zone\", \"type\":\"string\" },"
-            + "  { \"name\":\"user_geo_enabled\", \"type\":\"string\" },"
             + "  { \"name\":\"user_lang\", \"type\":\"string\" },"
             + "  { \"name\":\"user_profile_image_url_https\", \"type\":\"string\" },"           
             + "  { \"name\":\"user_screen_name\", \"type\":\"string\" }"            
@@ -126,7 +124,7 @@ public class TwitterProducer {
         // Bootstrapping
         producerProperties.put("bootstrap.servers", kafkaBroker);
         producerProperties.put("metadata.broker.list", kafkaBroker);
-
+      
         // Serializer Class for Keys
         producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
@@ -142,7 +140,7 @@ public class TwitterProducer {
       
 
         // Create the Kafka Producer
-        producer = new KafkaProducer(producerProperties);
+        producer = new KafkaProducer<String, byte[]>(producerProperties);
 
         // Twitter Connection and Filtering Properties
         BlockingQueue<String> messageQueue = new LinkedBlockingQueue<String>(100000);
@@ -150,7 +148,7 @@ public class TwitterProducer {
         //endpoint.languages(Lists.newArrayList("pt"));
         endpoint.stallWarnings(false);
         endpoint.followings(Lists.newArrayList(new Long(412468360)));
-        //endpoint.trackTerms(Lists.newArrayList(keyWords));
+        endpoint.trackTerms(Lists.newArrayList(keyWords));
         Authentication authentication = new OAuth1(consumerKey, consumerSecret, accessToken, accessTokenSecret);
 
         // Build a Twitter Hosebird Client
@@ -186,9 +184,9 @@ public class TwitterProducer {
 
         // Run the Producer for 60 seconds for DEV purposes
         // Note that this is NOT a graceful exit
-        //Thread.sleep(1000);
-        //producer.close();
-        //hosebirdClient.stop();
+//        Thread.sleep(1000);
+//        producer.close();
+//        hosebirdClient.stop();
 
     }
 
@@ -202,13 +200,23 @@ public class TwitterProducer {
     private static StatusListener statusListener = new StatusStreamHandler() {
 
         public void onStatus(Status status) {
-
-            // Convert the Status object into an Avro Record for serialising and publishing to the Kafka Topic
+              
+          	 
+        	// Convert the Status object into an Avro Record for serialising and publishing to the Kafka Topic
             GenericData.Record avroRecord = createRecord(status);
+            
+            
+            
             byte[] avroRecordBytes = recordInjection.apply(avroRecord);
+            
+            
             ProducerRecord<String, byte[]> record = new ProducerRecord(KAFKA_TOPIC, avroRecordBytes);
             // Send the Message to Kafka
+            
+            
             producer.send(record);
+            System.out.println(avroRecord.toString());
+            
 
         }
 
@@ -266,15 +274,14 @@ public class TwitterProducer {
         if(status.getGeoLocation()!=null){
         	 doc.put("coordenada_latitude", status.getGeoLocation().getLatitude());
              doc.put("coordenada_longitude", status.getGeoLocation().getLongitude());
+        }else{
+        	doc.put("coordenada_latitude", 0.0);
+            doc.put("coordenada_longitude", 0.0);
         }
+
+     
         
-//        + "  { \"name\":\"user_verified\", \"type\":\"string\" },"
-//        + "  { \"name\":\"user_geo_enabled\", \"type\":\"string\" },"
-        
-        
-        
-        
-        System.out.println(doc.toString());
+ 
         return doc;
 
     }
@@ -311,20 +318,20 @@ public class TwitterProducer {
 		String[] keyWords = {"brasil","dataprev"};
 		
 		
-        try {
-
+     
             Schema.Parser parser = new Schema.Parser();
             schema = parser.parse(TWEET_SCHEMA);
             recordInjection = GenericAvroCodecs.toBinary(schema);
 
             // Connect to the Twitter Streaming API and start the Producer
-            TwitterProducer.run(brokerURL,topicName,consumerKey,consumerSecret,accessToken,accessTokenSecret,proxyHost,proxyPort,keyWords);
+            try {
+				TwitterProducer.run(brokerURL,topicName,consumerKey,consumerSecret,accessToken,accessTokenSecret,proxyHost,proxyPort,keyWords);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 
-        } catch (Exception e) {
-
-            System.out.println(e);
-
-        }
+      
 
     }
 
