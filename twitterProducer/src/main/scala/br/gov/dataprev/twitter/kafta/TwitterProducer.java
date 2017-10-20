@@ -1,7 +1,6 @@
 package br.gov.dataprev.twitter.kafta;
 
-import java.io.File;
-import java.util.Arrays;
+
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -14,6 +13,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.twitter.bijection.Injection;
 import com.twitter.bijection.avro.GenericAvroCodecs;
@@ -52,18 +52,18 @@ import twitter4j.User;
  */
 
 public class TwitterProducer {
-
-    // Kafka Producer - note that Kafka Producers are Thread Safe and that sharing a Producer instance
+	
+	 // Kafka Producer - note that Kafka Producers are Thread Safe and that sharing a Producer instance
     // across threads is generally faster than having multiple Producer instances
     private static KafkaProducer<String, byte[]> producer;
-
+   
     // Note that for a Production Deployment, do not hard-code your Twitter Application Authentication Keys
     // Instead, derive from a Configuration File or Context
 //    private static final String CONSUMER_KEY = "H8uzrzZGI8lzl9qZp4nl8791v";
 //    private static final String CONSUMER_SECRET = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
 //    private static final String ACCESS_TOKEN = "412468360-dyLD4IE5zDKkynOA8gSaHDhC6PkpCp9TbAIq8gZD";
 //    private static final String ACCESS_TOKEN_SECRET = "wdLst7o4eqGsukqOjyxcQcyIjRZEqc02P0TlcAODPr01j";
-      private  static final String KAFKA_TOPIC = "twitter-firehose2";
+      private  static final String KAFKA_TOPIC = "twitter-firehose";
     
     
     
@@ -87,7 +87,7 @@ public class TwitterProducer {
             + "  { \"name\":\"user_name\", \"type\":\"string\" },"
             + "  { \"name\":\"user_location\", \"type\": [\"string\", \"null\"] },"
             + "  { \"name\":\"user_url\", \"type\":[\"string\", \"null\"] },"
-            + "  { \"name\":\"user_description\", \"type\":\"string\" },"
+            + "  { \"name\":\"user_description\", \"type\":[\"string\", \"null\"] },"
             + "  { \"name\":\"user_followers_count\", \"type\":\"int\" },"
             + "  { \"name\":\"user_friends_count\", \"type\":\"int\" },"
             + "  { \"name\":\"user_listed_count\", \"type\":\"int\" },"
@@ -95,7 +95,7 @@ public class TwitterProducer {
             + "  { \"name\":\"user_statuses_count\", \"type\":\"int\" },"
             + "  { \"name\":\"user_created_at\", \"type\":\"string\" },"
             + "  { \"name\":\"user_utc_offset\", \"type\":\"int\" },"
-            + "  { \"name\":\"user_time_zone\", \"type\":\"string\" },"
+            + "  { \"name\":\"user_time_zone\", \"type\":[\"string\", \"null\"] },"
             + "  { \"name\":\"user_lang\", \"type\":\"string\" },"
             + "  { \"name\":\"user_profile_image_url_https\", \"type\":\"string\" },"           
             + "  { \"name\":\"user_screen_name\", \"type\":\"string\" }"            
@@ -123,7 +123,6 @@ public class TwitterProducer {
 
         // Bootstrapping
         producerProperties.put("bootstrap.servers", kafkaBroker);
-        producerProperties.put("metadata.broker.list", kafkaBroker);
       
         // Serializer Class for Keys
         producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -135,7 +134,7 @@ public class TwitterProducer {
         producerProperties.put("request.required.acks", "1");
         
         
-        producerProperties.put("security.protocol", "PLAINTEXTSASL");
+       // producerProperties.put("security.protocol", "PLAINTEXTSASL");
         
       
 
@@ -159,9 +158,9 @@ public class TwitterProducer {
                 .endpoint(endpoint) 
                 .processor(new StringDelimitedProcessor(messageQueue));
         
-        if(!proxyHost.isEmpty())
-        	hosebirdClientBuilder.proxy(proxyHost, proxyPort);
-        
+//        if(!proxyHost.isEmpty())
+//        	hosebirdClientBuilder.proxy(proxyHost, proxyPort);
+//        
         
         BasicClient hosebirdClient = hosebirdClientBuilder.build();
 
@@ -289,6 +288,7 @@ public class TwitterProducer {
     public static void main(String[] args) {
 
     	
+    	
 //    	if (args.length < 9) {
 //			System.out.println(
 //					"Usage: TwitterProducer <brokerURL> <topicName> <twitter-consumer-key> <twitter-consumer-secret> <twitter-access-token> <twitter-access-token-secret> <proxy-host> <proxy-port> <twitter-search-keywords>");
@@ -307,7 +307,7 @@ public class TwitterProducer {
 //		String[] keyWords = Arrays.copyOfRange(arguments, 8, arguments.length);
 		
 		
-		String brokerURL = "f321t018.prevnet:6667";
+		String brokerURL = "machine45.localdomain:6667";
     	String topicName = "twitter";
 		String consumerKey = "H8uzrzZGI8lzl9qZp4nl8791v";
 		String consumerSecret = "X6x9CCL4PM3DacQILyx3SQErYUcFbJGv3ghkGgU5cSXU0qYMGb";
